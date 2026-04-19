@@ -17,19 +17,18 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
-map.setView([50.0755, 14.4378], 13);
+
+map.setView([50.0755, 14.4378], 8);
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
-  statusEl.style.color = isError ? 'var(--danger)' : 'var(--muted)';
 }
 
 function escapeHtml(value) {
   return String(value || '')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
+    .replaceAll('>', '&gt;');
 }
 
 function factRow(label, value) {
@@ -37,136 +36,106 @@ function factRow(label, value) {
   return `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`;
 }
 
+function getDistanceKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+async function loadSynagogues() {
+  const res = await fetch('/stredni_cechy_dataset_v2.json');
+  const data = await res.json();
+  return data.records || [];
+}
+
+function openDetail(item) {
+  dialogTitle.textContent = item.name;
+
+  dialogBody.innerHTML = `
+    <div>
+      <b>${escapeHtml(item.name)}</b><br>
+      ${escapeHtml(item.description_short || '')}<br><br>
+
+      ${item.address ? `<b>Adresa:</b> ${escapeHtml(item.address)}<br>` : ''}
+      ${item.current_use ? `<b>Dnes:</b> ${escapeHtml(item.current_use)}<br>` : ''}
+      ${item.year_built ? `<b>Postaveno:</b> ${item.year_built}<br>` : ''}
+    </div>
+  `;
+
+  dialog.showModal();
+}
+
 function renderResults() {
   const filter = statusFilter.value;
-  const items = filter === 'all' ? allItems : allItems.filter((item) => item.status === filter);
+  const items = filter === 'all'
+    ? allItems
+    : allItems.filter(i => i.status === filter);
+
   resultsEl.innerHTML = '';
   resultLayer.clearLayers();
 
   if (!items.length) {
-    resultsEl.innerHTML = '<div class="card">Nic se nenašlo pro zvolený filtr.</div>';
+    resultsEl.innerHTML = '<div class="card">Nic nenalezeno</div>';
     return;
   }
 
-  const bounds = [];
   for (const item of items) {
     const card = cardTemplate.content.firstElementChild.cloneNode(true);
+
     card.querySelector('.name').textContent = item.name;
     card.querySelector('.meta').textContent = `${item.status} • ${item.distanceKm} km`;
-    card.querySelector('.summary').textContent = item.address || 'Adresa není k dispozici.';
+    card.querySelector('.summary').textContent =
+      item.description_short || item.address || '';
+
     card.querySelector('.facts').innerHTML = [
-      factRow('Postaveno', item.yearBuilt),
-      factRow('Architekt', item.architect),
-      factRow('Dnes', item.currentUse)
+      factRow('Postaveno', item.year_built),
+      factRow('Dnes', item.current_use)
     ].join('');
-    card.querySelector('.detail-btn').addEventListener('click', () => openDetail(item));
+
+    card.querySelector('.detail-btn').onclick = () => openDetail(item);
+
     resultsEl.appendChild(card);
 
     const marker = L.marker([item.lat, item.lon]).addTo(resultLayer);
-    marker.bindPopup(`<strong>${escapeHtml(item.name)}</strong><br>${escapeHtml(item.status)}`);
     marker.on('click', () => openDetail(item));
-    bounds.push([item.lat, item.lon]);
-  }
-
-  if (currentMarker) {
-    bounds.push(currentMarker.getLatLng());
-  }
-  if (bounds.length) {
-    map.fitBounds(bounds, { padding: [30, 30] });
-  }
-}
-
-async function openDetail(item) {
-  dialogTitle.textContent = item.name;
-  dialogBody.innerHTML = '<div class="detail-block">Načítám detail…</div>';
-  dialog.showModal();
-
-  const params = new URLSearchParams({
-    wikidata: item.wikidata || '',
-    wikipedia: item.wikipedia || '',
-    yearBuilt: item.yearBuilt || '',
-    architect: item.architect || '',
-    currentUse: item.currentUse || '',
-    name: item.name || '',
-    status: item.status || ''
-  });
-
-  try {
-    const res = await fetch(`/api/details?${params.toString()}`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Chyba detailu');
-
-    dialogBody.innerHTML = `
-      <div class="detail-block">
-        <span class="badge">${escapeHtml(data.status || item.status)}</span>
-        ${item.distanceKm ? `<span class="badge">${escapeHtml(item.distanceKm)} km</span>` : ''}
-        ${item.address ? `<p><strong>Adresa:</strong> ${escapeHtml(item.address)}</p>` : ''}
-        ${data.summary ? `<p>${escapeHtml(data.summary)}</p>` : '<p>Stručný historický popis zatím není k dispozici.</p>'}
-      </div>
-      <div class="detail-block">
-        <h3>Základní údaje</h3>
-        <dl class="facts">
-          ${factRow('Postaveno', data.yearBuilt || item.yearBuilt)}
-          ${factRow('Architekt / stavitel', data.architect || item.architect)}
-          ${factRow('Dnešní využití', data.currentUse || item.currentUse)}
-          ${factRow('Wikidata', data.wikidata?.qid)}
-        </dl>
-      </div>
-      <div class="detail-block">
-        <h3>Zdroje</h3>
-        <ul>
-          ${data.wikidata?.wikipediaUrl ? `<li><a href="${escapeHtml(data.wikidata.wikipediaUrl)}" target="_blank" rel="noreferrer">Wikipedia</a></li>` : ''}
-          ${item.wikidata ? `<li><a href="https://www.wikidata.org/wiki/${escapeHtml(item.wikidata)}" target="_blank" rel="noreferrer">Wikidata</a></li>` : ''}
-          <li><a href="https://www.openstreetmap.org/${escapeHtml(item.osmType)}/${escapeHtml(item.osmId)}" target="_blank" rel="noreferrer">OpenStreetMap objekt</a></li>
-        </ul>
-      </div>
-    `;
-  } catch (error) {
-    dialogBody.innerHTML = `<div class="detail-block">${escapeHtml(error.message)}</div>`;
   }
 }
 
 async function fetchNearby(position) {
   const { latitude, longitude } = position.coords;
-  const radius = radiusSelect.value;
+  const radius = Number(radiusSelect.value);
 
   if (currentMarker) map.removeLayer(currentMarker);
-  currentMarker = L.marker([latitude, longitude]).addTo(map).bindPopup('Jsi tady');
+  currentMarker = L.marker([latitude, longitude]).addTo(map);
 
-  setStatus('Hledám synagogy v okolí…');
-  try {
-    const res = await fetch(`/api/nearby?lat=${latitude}&lon=${longitude}&radius=${radius}`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Chyba při načítání.');
-    allItems = data.items;
-    setStatus(`Nalezeno ${data.count} objektů. Klepni na detail pro historii a zdroje.`);
-    renderResults();
-  } catch (error) {
-    setStatus(error.message, true);
-  }
+  setStatus('Načítám data…');
+
+  const data = await loadSynagogues();
+
+  allItems = data
+    .filter(i => i.lat && i.lon)
+    .map(i => {
+      const d = getDistanceKm(latitude, longitude, i.lat, i.lon);
+      return { ...i, distanceKm: d.toFixed(1) };
+    })
+    .filter(i => i.distanceKm <= radius)
+    .sort((a, b) => a.distanceKm - b.distanceKm);
+
+  setStatus(`Nalezeno: ${allItems.length}`);
+  renderResults();
 }
 
-function locate() {
-  if (!navigator.geolocation) {
-    setStatus('Tento prohlížeč nepodporuje geolokaci.', true);
-    return;
-  }
-  setStatus('Čekám na povolení polohy…');
-  navigator.geolocation.getCurrentPosition(fetchNearby, (error) => {
-    setStatus(`Nepodařilo se získat polohu: ${error.message}`, true);
-  }, {
-    enableHighAccuracy: true,
-    timeout: 15000,
-    maximumAge: 60000
-  });
+function locateUser() {
+  navigator.geolocation.getCurrentPosition(fetchNearby);
 }
 
-locateBtn.addEventListener('click', locate);
-statusFilter.addEventListener('change', renderResults);
-radiusSelect.addEventListener('change', () => {
-  if (currentMarker) locate();
-});
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
-}
+locateBtn.onclick = locateUser;
+statusFilter.onchange = renderResults;
