@@ -6,6 +6,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter'
+];
+
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -156,6 +162,42 @@ async function fetchWikipediaSummary(url) {
   }
 }
 
+async function fetchOverpassJson(query) {
+  const errors = [];
+
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25000);
+
+      const body = new URLSearchParams({ data: query }).toString();
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'User-Agent': 'SynagogueNearMe/0.1 (contact via deployed app)',
+          'Accept': 'application/json'
+        },
+        body,
+        signal: controller.signal
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        const snippet = (await response.text()).slice(0, 200).replace(/\s+/g, ' ').trim();
+        throw new Error(`${response.status}${snippet ? ` ${snippet}` : ''}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      errors.push(`${endpoint}: ${error.name === 'AbortError' ? 'timeout' : error.message}`);
+    }
+  }
+
+  throw new Error(errors.join(' | '));
+}
+
 app.get('/api/nearby', async (req, res) => {
   const lat = Number(req.query.lat);
   const lon = Number(req.query.lon);
@@ -166,17 +208,7 @@ app.get('/api/nearby', async (req, res) => {
   }
 
   try {
-    const overpassRes = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      body: buildOverpassQuery(lat, lon, radius)
-    });
-
-    if (!overpassRes.ok) {
-      throw new Error(`Overpass failed: ${overpassRes.status}`);
-    }
-
-    const data = await overpassRes.json();
+    const data = await fetchOverpassJson(buildOverpassQuery(lat, lon, radius));
     const unique = new Map();
     for (const el of data.elements || []) {
       const normalized = normalizeElement(el, lat, lon);
@@ -190,7 +222,10 @@ app.get('/api/nearby', async (req, res) => {
 
     res.json({ count: items.length, items });
   } catch (error) {
-    res.status(500).json({ error: 'Nepodařilo se stáhnout data o synagogách.', detail: error.message });
+    res.status(500).json({
+      error: 'Nepodařilo se stáhnout data o synagogách.',
+      detail: error.message
+    });
   }
 });
 
