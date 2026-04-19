@@ -51,7 +51,7 @@ function getDistanceKm(lat1, lon1, lat2, lon2) {
 }
 
 async function loadSynagogues() {
-  const res = await fetch('/stredni_cechy_dataset_v2.json');
+  const res = await fetch('/stredni_cechy_dataset_v3_app.json');
   const data = await res.json();
   return data.records || [];
 }
