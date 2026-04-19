@@ -1,0 +1,111 @@
+{
+  "meta": {
+    "version": "2",
+    "region": "Středočeský kraj",
+    "record_count": 10,
+    "description": "Vylepšený dataset s GPS a lepšími popisy pro hlavní lokality.",
+    "generated_at": "2026-04-19"
+  },
+  "records": [
+    {
+      "id": "cz-sc-0001",
+      "name": "Synagoga Kolín",
+      "municipality": "Kolín",
+      "lat": 50.0286,
+      "lon": 15.202,
+      "status": "former",
+      "current_use": "Regionální muzeum",
+      "description_short": "Barokní synagoga v Kolíně, dnes muzeum."
+    },
+    {
+      "id": "cz-sc-0002",
+      "name": "Synagoga Kutná Hora",
+      "municipality": "Kutná Hora",
+      "lat": 49.9489,
+      "lon": 15.2681,
+      "status": "former",
+      "current_use": "Církevní objekt",
+      "description_short": "Pozdní synagoga, dnes využívána jinou církví."
+    },
+    {
+      "id": "cz-sc-0003",
+      "name": "Synagoga Rakovník",
+      "municipality": "Rakovník",
+      "lat": 50.1037,
+      "lon": 13.7396,
+      "status": "former",
+      "current_use": "Kulturní prostor",
+      "description_short": "Dochovaná synagoga využívaná pro kulturní akce."
+    },
+    {
+      "id": "cz-sc-0004",
+      "name": "Synagoga Brandýs nad Labem",
+      "municipality": "Brandýs nad Labem",
+      "lat": 50.186,
+      "lon": 14.6635,
+      "status": "former",
+      "current_use": "Obytný dům",
+      "description_short": "Bývalá synagoga přestavěná na bydlení."
+    },
+    {
+      "id": "cz-sc-0005",
+      "name": "Synagoga Nymburk",
+      "municipality": "Nymburk",
+      "lat": 50.1861,
+      "lon": 15.0417,
+      "status": "former",
+      "current_use": "Kulturní objekt",
+      "description_short": "Synagoga v Nymburce dnes využívaná kulturně."
+    },
+    {
+      "id": "cz-sc-0006",
+      "name": "Synagoga Mladá Boleslav",
+      "municipality": "Mladá Boleslav",
+      "lat": 50.411,
+      "lon": 14.903,
+      "status": "former",
+      "current_use": "Nejasné",
+      "description_short": "Historická synagoga v Mladé Boleslavi."
+    },
+    {
+      "id": "cz-sc-0007",
+      "name": "Synagoga Slaný",
+      "municipality": "Slaný",
+      "lat": 50.231,
+      "lon": 14.086,
+      "status": "former",
+      "current_use": "Galerie",
+      "description_short": "Synagoga využívaná jako galerie."
+    },
+    {
+      "id": "cz-sc-0008",
+      "name": "Synagoga Kladno",
+      "municipality": "Kladno",
+      "lat": 50.147,
+      "lon": 14.102,
+      "status": "former",
+      "current_use": "Zaniklá / přestavěná",
+      "description_short": "Původní synagoga dnes přestavěna."
+    },
+    {
+      "id": "cz-sc-0009",
+      "name": "Synagoga Příbram",
+      "municipality": "Příbram",
+      "lat": 49.689,
+      "lon": 14.01,
+      "status": "destroyed",
+      "current_use": "Neexistuje",
+      "description_short": "Zaniklá synagoga v Příbrami."
+    },
+    {
+      "id": "cz-sc-0010",
+      "name": "Synagoga Poděbrady",
+      "municipality": "Poděbrady",
+      "lat": 50.141,
+      "lon": 15.118,
+      "status": "destroyed",
+      "current_use": "Neexistuje",
+      "description_short": "Zaniklá synagoga v Poděbradech."
+    }
+  ]
+}
