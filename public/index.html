@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Synagogy poblíž</title>
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Synagogy" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icon-180.png" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1>Synagogy poblíž</h1>
+        <p>Současné i bývalé synagogy kolem tebe</p>
+      </div>
+      <button id="locateBtn" class="primary">Najít kolem mě</button>
+    </header>
+
+    <section class="controls">
+      <label>
+        Okruh
+        <select id="radiusSelect">
+          <option value="2000">2 km</option>
+          <option value="5000" selected>5 km</option>
+          <option value="10000">10 km</option>
+          <option value="20000">20 km</option>
+        </select>
+      </label>
+
+      <label>
+        Typ
+        <select id="statusFilter">
+          <option value="all">Vše</option>
+          <option value="současná">Jen současné</option>
+          <option value="bývalá / historická">Jen bývalé / historické</option>
+        </select>
+      </label>
+    </section>
+
+    <main class="content">
+      <section id="map" aria-label="Mapa synagog"></section>
+
+      <aside class="panel">
+        <div id="status" class="status">Klepni na „Najít kolem mě“.</div>
+        <div id="results" class="results"></div>
+      </aside>
+    </main>
+  </div>
+
+  <template id="cardTemplate">
+    <article class="card">
+      <div class="card-head">
+        <div>
+          <h3 class="name"></h3>
+          <p class="meta"></p>
+        </div>
+        <button class="ghost detail-btn">Detail</button>
+      </div>
+      <p class="summary"></p>
+      <dl class="facts"></dl>
+    </article>
+  </template>
+
+  <dialog id="detailDialog">
+    <form method="dialog" class="dialog-form">
+      <div class="dialog-head">
+        <h2 id="dialogTitle">Detail</h2>
+        <button class="ghost">Zavřít</button>
+      </div>
+      <div id="dialogBody" class="dialog-body"></div>
+    </form>
+  </dialog>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
