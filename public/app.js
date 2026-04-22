@@ -64,7 +64,6 @@ async function loadSynagogues() {
 
   return data || [];
 }
-}
 
 function openDetail(item) {
   dialogTitle.textContent = item.name;
