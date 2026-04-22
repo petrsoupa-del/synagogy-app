@@ -1,3 +1,6 @@
+const SUPABASE_URL = 'SEM_VLOZ_SVOJI_PROJECT_URL';
+const SUPABASE_KEY = 'SEM_VLOZ_SVOJI_PUBLISHABLE_NEBO_ANON_KEY';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const statusEl = document.getElementById('status');
 const resultsEl = document.getElementById('results');
 const locateBtn = document.getElementById('locateBtn');
