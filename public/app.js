@@ -10,6 +10,10 @@ const cardTemplate = document.getElementById('cardTemplate');
 const dialog = document.getElementById('detailDialog');
 const dialogTitle = document.getElementById('dialogTitle');
 const dialogBody = document.getElementById('dialogBody');
+const latInput = document.getElementById('latInput');
+const lonInput = document.getElementById('lonInput');
+const searchBtn = document.getElementById('searchBtn');
+const clearPointBtn = document.getElementById('clearPointBtn');
 
 let map = L.map('map');
 let currentMarker = null;
@@ -142,9 +146,91 @@ async function fetchNearby(position) {
   renderResults();
 }
 
-function locateUser() {
-  navigator.geolocation.getCurrentPosition(fetchNearby);
+function setSearchPoint(lat, lon, panMap = true) {
+  latInput.value = Number(lat).toFixed(6);
+  lonInput.value = Number(lon).toFixed(6);
+
+  if (currentMarker) map.removeLayer(currentMarker);
+
+  currentMarker = L.marker([lat, lon])
+    .addTo(map)
+    .bindPopup('Hledaný bod');
+
+  currentMarker.openPopup();
+
+  if (panMap) {
+    map.setView([lat, lon], Math.max(map.getZoom(), 11));
+  }
 }
 
-locateBtn.onclick = locateUser;
+function clearSearchPoint() {
+  latInput.value = '';
+  lonInput.value = '';
+
+  if (currentMarker) {
+    map.removeLayer(currentMarker);
+    currentMarker = null;
+  }
+
+  allItems = [];
+  renderResults();
+  setStatus('Vyber bod kliknutím do mapy nebo zadej souřadnice.');
+}
+
+async function searchAroundPoint() {
+  const lat = Number(latInput.value);
+  const lon = Number(lonInput.value);
+  const radius = Number(radiusSelect.value);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    setStatus('Zadej platnou zeměpisnou šířku a délku.', true);
+    return;
+  }
+
+  setSearchPoint(lat, lon, false);
+  setStatus('Načítám synagogy z databáze…');
+
+  try {
+    const data = await loadSynagogues();
+
+    allItems = data
+      .filter(i => typeof i.lat === 'number' && typeof i.lon === 'number')
+      .map(i => {
+        const d = getDistanceKm(lat, lon, i.lat, i.lon);
+        return { ...i, distanceKm: d.toFixed(1) };
+      })
+      .filter(i => Number(i.distanceKm) <= radius)
+      .sort((a, b) => Number(a.distanceKm) - Number(b.distanceKm));
+
+    setStatus(`Nalezeno: ${allItems.length}`);
+    renderResults();
+  } catch (error) {
+    allItems = [];
+    renderResults();
+    setStatus(`Chyba načítání databáze: ${error.message}`, true);
+  }
+}
+
+map.on('click', (event) => {
+  const { lat, lng } = event.latlng;
+  setSearchPoint(lat, lng);
+  setStatus('Bod vybrán. Klikni na „Hledat kolem bodu“.');
+});
+
+searchBtn.onclick = searchAroundPoint;
+clearPointBtn.onclick = clearSearchPoint;
+
+statusFilter.onchange = renderResults;
+
+radiusSelect.onchange = () => {
+  if (latInput.value && lonInput.value) {
+    searchAroundPoint();
+  }
+};
+
+if (locateBtn) {
+  locateBtn.style.display = 'none';
+}
+
+setStatus('Vyber bod kliknutím do mapy nebo zadej souřadnice.');
 statusFilter.onchange = renderResults;
